@@ -23,19 +23,16 @@ def run_dcrnn(args):
             supervisor.dcrnn_model = supervisor.dcrnn_model.eval()
 
             val_iterator = supervisor._data['{}_loader'.format(dataset)].get_iterator()
-            losses = []
-
-            y_truths = []
-            y_preds = []
-
             gradients = []
-
             for _, (x, y) in enumerate(val_iterator):
                 x, y = supervisor._prepare_data(x, y)
 
                 output = supervisor.dcrnn_model(x)
                 supervisor.dcrnn_model.zero_grad()
-                print(output.shape)
+                output.backward()
+                with torch.no_grad():
+                    gradient = x.grad.detach().cpu().numpy()
+                    gradients.append(gradient)
                 #torch.sum(output[:,])
                 #loss = self._compute_loss(y, output)
                 #losses.append(loss.item())
@@ -43,6 +40,7 @@ def run_dcrnn(args):
                 #y_truths.append(y.cpu())
                 #y_preds.append(output.cpu())
         #mean_score, outputs = supervisor.evaluate('test')
+        np.savez_compressed(args.args.output_filename, gradients)
         #np.savez_compressed(args.output_filename, **outputs)
         #print("MAE : {}".format(mean_score))
         #print('Predictions saved as {}.'.format(args.output_filename))
