@@ -58,10 +58,10 @@ def generate_train_val_test(args):
     # 0 is the latest observed sample.
     x_offsets = np.sort(
         # np.concatenate(([-week_size + 1, -day_size + 1], np.arange(-11, 1, 1)))
-        np.concatenate((np.arange(-11, 1, 1),))
+        np.concatenate((np.arange(-args.periods+1, 1, 1),))
     )
     # Predict the next one hour
-    y_offsets = np.sort(np.arange(1, 13, 1))
+    y_offsets = np.sort(np.arange(1, args.periods+1, 1))
     # x: (num_samples, input_length, num_nodes, input_dim)
     # y: (num_samples, output_length, num_nodes, output_dim)
     x, y = generate_graph_seq2seq_io_data(
@@ -119,5 +119,6 @@ if __name__ == "__main__":
         default="data/metr-la.h5",
         help="Raw traffic readings.",
     )
+    parser.add_argument("--periods", type=int, default=12)
     args = parser.parse_args()
     main(args)
