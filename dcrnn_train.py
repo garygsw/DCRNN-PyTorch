@@ -23,7 +23,6 @@ def main(args):
         tf_config.gpu_options.allow_growth = True
         with tf.Session(config=tf_config) as sess:
             supervisor = DCRNNSupervisor(adj_mx=adj_mx, **supervisor_config)
-
             supervisor.train(sess=sess)
 
 
@@ -32,5 +31,6 @@ if __name__ == '__main__':
     parser.add_argument('--config_filename', default=None, type=str,
                         help='Configuration filename for restoring the model.')
     parser.add_argument('--use_cpu_only', default=False, type=bool, help='Set to true to only use cpu.')
+    parser.add_argument('--seed', default='1')
     args = parser.parse_args()
     main(args)

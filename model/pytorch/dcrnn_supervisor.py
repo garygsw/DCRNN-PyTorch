@@ -18,6 +18,8 @@ class DCRNNSupervisor:
         self._data_kwargs = kwargs.get('data')
         self._model_kwargs = kwargs.get('model')
         self._train_kwargs = kwargs.get('train')
+        self._seed = kwargs.get('seed')
+        torch.manual_seed(int(self._seed))
 
         self.max_grad_norm = self._train_kwargs.get('max_grad_norm', 1.)
 
@@ -80,20 +82,30 @@ class DCRNNSupervisor:
     def save_model(self, epoch):
         if not os.path.exists('models/'):
             os.makedirs('models/')
+            if not os.path.exists('models/' + self._seed):
+                os.makedirs('models/' + self._seed)
 
         config = dict(self._kwargs)
         config['model_state_dict'] = self.dcrnn_model.state_dict()
         config['epoch'] = epoch
-        torch.save(config, 'models/epo%d.tar' % epoch)
+        torch.save(config, 'models/%s/epo%d.tar' % (self._seed, epoch))
         self._logger.info("Saved model at {}".format(epoch))
-        return 'models/epo%d.tar' % epoch
+        return 'models/%s/epo%d.tar' % (self._seed, epoch)
 
     def load_model(self):
         self._setup_graph()
-        assert os.path.exists('models/epo%d.tar' % self._epoch_num), 'Weights at epoch %d not found' % self._epoch_num
-        checkpoint = torch.load('models/epo%d.tar' % self._epoch_num, map_location='cpu')
+
+        epoch_lists = os.listdir('models/%s' % self._seed)
+        max_epoch = 1
+        for name in epoch_lists:
+            if name[:3] == 'epo':
+                if int(name[3:-4]) > max_epoch:
+                    max_epoch = int(name[3:-4])
+
+        assert os.path.exists('models/%s/epo%d.tar' % (self._seed, max_epoch)), 'Weights at epoch %d for run %s not found' % (max_epoch, self._seed)
+        checkpoint = torch.load('models/%s/epo%d.tar' % (self._seed, max_epoch), map_location='cpu')
         self.dcrnn_model.load_state_dict(checkpoint['model_state_dict'])
-        self._logger.info("Loaded model at {}".format(self._epoch_num))
+        self._logger.info("Loaded model at {}".format(max_epoch))
 
     def _setup_graph(self):
         with torch.no_grad():

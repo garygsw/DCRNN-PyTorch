@@ -21,8 +21,8 @@ model:
 train:
   base_lr: 0.01
   dropout: 0
-  epoch: 64
-  epochs: 100
+  epoch: 0
+  epochs: 50
   epsilon: 0.001
   global_step: 24375
   log_dir: data/model/pretrained/METR-LA
