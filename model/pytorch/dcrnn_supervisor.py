@@ -82,8 +82,8 @@ class DCRNNSupervisor:
     def save_model(self, epoch):
         if not os.path.exists('models/'):
             os.makedirs('models/')
-            if not os.path.exists('models/' + self._seed):
-                os.makedirs('models/' + self._seed)
+        if not os.path.exists('models/' + self._seed):
+            os.makedirs('models/' + self._seed)
 
         config = dict(self._kwargs)
         config['model_state_dict'] = self.dcrnn_model.state_dict()
