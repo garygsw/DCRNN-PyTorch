@@ -11,6 +11,7 @@ from model.pytorch.dcrnn_supervisor import DCRNNSupervisor
 def run_dcrnn(args):
     with open(args.config_filename) as f:
         supervisor_config = yaml.load(f)
+        supervisor_config['seed'] = args.seed
 
         graph_pkl_filename = supervisor_config['data'].get('graph_pkl_filename')
         sensor_ids, sensor_id_to_ind, adj_mx = load_graph_data(graph_pkl_filename)
