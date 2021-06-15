@@ -20,7 +20,7 @@ def run_dcrnn(args):
         mean_score, outputs = supervisor.evaluate('test')
         # np.savez_compressed(args.output_filename, **outputs)
         print("MAE : {}".format(mean_score))
-        print('Predictions saved as {}.'.format(args.output_filename))
+        #print('Predictions saved as {}.'.format(args.output_filename))
 
 
 if __name__ == '__main__':
