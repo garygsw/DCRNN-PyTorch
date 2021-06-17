@@ -34,7 +34,7 @@ def run_dcrnn(args):
 
             #print('output shape:', output.shape)   # [T, 64, 207]
             supervisor.dcrnn_model.zero_grad()
-            torch.sum(output[0].backward())
+            torch.sum(output[0,:,:]).backward()
 
             with torch.no_grad():
                 gradient = x.grad.detach().cpu().numpy()
