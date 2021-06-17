@@ -12,6 +12,7 @@ from model.pytorch.dcrnn_supervisor import DCRNNSupervisor
 def run_dcrnn(args):
     with open(args.config_filename) as f:
         supervisor_config = yaml.load(f)
+        supervisor_config['seed'] = args.seed
 
         graph_pkl_filename = supervisor_config['data'].get('graph_pkl_filename')
         sensor_ids, sensor_id_to_ind, adj_mx = load_graph_data(graph_pkl_filename)
@@ -19,20 +20,23 @@ def run_dcrnn(args):
         supervisor = DCRNNSupervisor(adj_mx=adj_mx, **supervisor_config)
 
         dataset = 'val'
-        with torch.no_grad():
-            supervisor.dcrnn_model = supervisor.dcrnn_model.eval()
+        supervisor.dcrnn_model = supervisor.dcrnn_model.eval()
 
-            val_iterator = supervisor._data['{}_loader'.format(dataset)].get_iterator()
-            gradients = []
-            for _, (x, y) in enumerate(val_iterator):
-                x, y = supervisor._prepare_data(x, y)
+        val_iterator = supervisor._data['{}_loader'.format(dataset)].get_iterator()
+        gradients = []
+        for _, (x, y) in enumerate(val_iterator):
+            x, y = supervisor._prepare_data(x, y)
 
-                output = supervisor.dcrnn_model(x)
-                supervisor.dcrnn_model.zero_grad()
-                torch.sum(output[:,0].backward())
-                with torch.no_grad():
-                    gradient = x.grad.detach().cpu().numpy()
-                    gradients.append(gradient)
+            print('x shape:', x.shape)
+        
+            output = supervisor.dcrnn_model(x)
+
+            print('output shape:', output.shape)
+            supervisor.dcrnn_model.zero_grad()
+            torch.sum(output[:,0].backward())
+            with torch.no_grad():
+                gradient = x.grad.detach().cpu().numpy()
+                gradients.append(gradient)
                 #torch.sum(output[:,])
                 #loss = self._compute_loss(y, output)
                 #losses.append(loss.item())
@@ -52,6 +56,7 @@ if __name__ == '__main__':
     parser.add_argument('--use_cpu_only', default=False, type=str, help='Whether to run tensorflow on cpu.')
     parser.add_argument('--config_filename', default='data/model/pretrained/METR-LA/config.yaml', type=str,
                         help='Config file for pretrained model.')
+    parser.add_argument('--seed', default='1')
     parser.add_argument('--output_filename', default='data/gradients.npz')
     args = parser.parse_args()
     run_dcrnn(args)
