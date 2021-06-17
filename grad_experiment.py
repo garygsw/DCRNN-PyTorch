@@ -35,7 +35,7 @@ def run_dcrnn(args):
 
             #print('output shape:', output.shape)   # [T, 64, 207]
             supervisor.dcrnn_model.zero_grad()
-            torch.sum(output[0,:,:]).backward()
+            output).backward()
 
             with torch.no_grad():
                 gradient = x.grad.detach().cpu().numpy()
@@ -47,7 +47,7 @@ def run_dcrnn(args):
                 #y_truths.append(y.cpu())
                 #y_preds.append(output.cpu())
         #mean_score, outputs = supervisor.evaluate('test')
-        np.savez_compressed(args.output_filename, gradients)
+        np.savez_compressed('data/raw_gradients.npz', gradients)
         #np.savez_compressed(args.output_filename, **outputs)
         #print("MAE : {}".format(mean_score))
         #print('Predictions saved as {}.'.format(args.output_filename))
@@ -60,6 +60,5 @@ if __name__ == '__main__':
     parser.add_argument('--config_filename', default='data/model/pretrained/METR-LA/config.yaml', type=str,
                         help='Config file for pretrained model.')
     parser.add_argument('--seed', default='1')
-    parser.add_argument('--output_filename', default='data/gradients.npz')
     args = parser.parse_args()
     run_dcrnn(args)
