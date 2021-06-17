@@ -29,6 +29,7 @@ def run_dcrnn(args):
             x, y = supervisor._prepare_data(x, y)
 
             #print('x shape:', x.shape)  # [T, 64, 414]
+            x = torch.tensor(x, requires_grad=True)
         
             output = supervisor.dcrnn_model(x)
 
