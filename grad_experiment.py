@@ -24,16 +24,18 @@ def run_dcrnn(args):
 
         val_iterator = supervisor._data['{}_loader'.format(dataset)].get_iterator()
         gradients = []
+        #explain = torch.tensor()
         for _, (x, y) in enumerate(val_iterator):
             x, y = supervisor._prepare_data(x, y)
 
-            print('x shape:', x.shape)
+            #print('x shape:', x.shape)  # [T, 64, 414]
         
             output = supervisor.dcrnn_model(x)
 
-            print('output shape:', output.shape)
+            #print('output shape:', output.shape)   # [T, 64, 207]
             supervisor.dcrnn_model.zero_grad()
-            torch.sum(output[:,0].backward())
+            torch.sum(output[0].backward())
+
             with torch.no_grad():
                 gradient = x.grad.detach().cpu().numpy()
                 gradients.append(gradient)
