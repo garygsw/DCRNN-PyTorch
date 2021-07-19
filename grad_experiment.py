@@ -61,7 +61,7 @@ def analyze_smoothgrad(args, noise_scale=15, num_noise=50):
             x, y = supervisor._prepare_data(x, y)
             #print('x shape:', x.shape)
             noised_inputs = torch.stack([torch.zeros_like(x) for _ in range(num_noise)])
-            input_noise_scale = noise_scale * (np.max(x.numpy()) - np.min(x.numpy()))
+            input_noise_scale = noise_scale * (np.max(x.cpu().numpy()) - np.min(x.cpu().numpy()))
 
             for i in range(num_noise):
                 noised_inputs[i] = x + input_noise_scale * torch.randn_like(x)
