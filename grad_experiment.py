@@ -41,10 +41,10 @@ def analyze_gradients(args):
         gradients = []
         for i, (x, y) in enumerate(data_loader.get_iterator()):
             print('getting gradients for batch %s out of %s ...', (i, data_loader.num_batch))
-            x, y = model._prepare_data(x, y)
+            x, y = supervisor._prepare_data(x, y)
             x.requires_grad = True
-            output = model.dcrnn_model(x)
-            model.dcrnn_model.zero_grad()
+            output = supervisor.dcrnn_model(x)
+            supervisor.dcrnn_model.zero_grad()
             torch.sum(output).backward()
             with torch.no_grad():
                 gradient = x.grad.detach().cpu().numpy()
@@ -77,8 +77,8 @@ def analyze_smoothgrad(args, noise_scale=15, num_noise=50):
             for i in range(num_noise):
                 noised_input = x + input_noise_scale * torch.randn_like(x)
                 noised_input.requires_grad = True
-                output = model.dcrnn_model(noised_input)
-                model.dcrnn_model.zero_grad()
+                output = supervisor.dcrnn_model(noised_input)
+                supervisor.dcrnn_model.zero_grad()
                 torch.sum(output).backward()
                 with torch.no_grad():
                     gradient = noised_input.grad.detach().cpu().numpy()
