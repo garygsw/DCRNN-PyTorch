@@ -12,7 +12,7 @@ from model.pytorch.dcrnn_supervisor import DCRNNSupervisor
 def get_gradients(data_loader, model):
     gradients = []
     for i, (x, y) in enumerate(data_loader.get_iterator()):
-        print('getting gradients for batch %s out of %s ...', (i, data_loader.num_batch))
+        print('getting gradients for batch %s out of %s ...' % (i, data_loader.num_batch))
         x, y = model._prepare_data(x, y)
         x.requires_grad = True
         output = model.dcrnn_model(x)
@@ -89,6 +89,47 @@ def analyze_smoothgrad(args, noise_scale=15, num_noise=50):
         np.savez_compressed('heatmaps/val_smoothgrads.npz', smoothgrads)
 
 
+def analyze_ig(args, baseline="zero", steps=50):
+    print('analyzing IG...')
+    with open(args.config_filename) as f:
+        supervisor_config = yaml.load(f)
+        supervisor_config['seed'] = args.seed
+
+        graph_pkl_filename = supervisor_config['data'].get('graph_pkl_filename')
+        sensor_ids, sensor_id_to_ind, adj_mx = load_graph_data(graph_pkl_filename)
+
+        supervisor = DCRNNSupervisor(adj_mx=adj_mx, **supervisor_config)
+
+        dataset = 'val'
+        supervisor.dcrnn_model = supervisor.dcrnn_model.eval()
+        data_loader = supervisor._data['{}_loader'.format(dataset)]
+
+        igs = []
+        for _, (x, y) in enumerate(data_loader.get_iterator()):
+            x, y = supervisor._prepare_data(x, y)
+            #print('x shape:', x.shape)
+            baseline = torch.zeros_like(x)
+            baseline = supervisor.standard_scaler.transform(baseline)
+            
+            diff = x - baseline
+            scaled_inputs = [baseline + (float(i) / steps)] * diff for i in range(steps + 1)]
+            
+            gradients = []
+            for i in range(len(scaled_inputs)):
+                scale_input = scaled_inputs[i]
+                scale_input.requires_grad = True
+                output = supervisor.dcrnn_model(scale_input)
+                supervisor.dcrnn_model.zero_grad()
+                torch.sum(output).backward()
+                with torch.no_grad():
+                    gradient = scaled_input.grad.detach().cpu().numpy()
+                    gradients.append(gradient)
+
+            ig= np.mean(gradients, axis=0)
+            igs.append(ig)
+        np.savez_compressed('heatmaps/val_igs.npz', igs)
+
+
 if __name__ == '__main__':
     sys.path.append(os.getcwd())
     parser = argparse.ArgumentParser()
@@ -100,8 +141,8 @@ if __name__ == '__main__':
 
 
     # Generate gradients attributions
-    analyze_gradients(args)
-    analyze_smoothgrad(args)
-    #analyze_ig(args)
+    #analyze_gradients(args)
+    #analyze_smoothgrad(args)
+    analyze_ig(args)
     #analyze_smoothtaylor(args)
 
