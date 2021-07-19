@@ -38,7 +38,18 @@ def analyze_gradients(args):
         dataset = 'val'
         supervisor.dcrnn_model = supervisor.dcrnn_model.eval()
         data_loader = supervisor._data['{}_loader'.format(dataset)]
-        gradients = get_gradients(data_loader, supervisor)
+        gradients = []
+        for i, (x, y) in enumerate(data_loader.get_iterator()):
+            print('getting gradients for batch %s out of %s ...', (i, data_loader.num_batch))
+            x, y = model._prepare_data(x, y)
+            x.requires_grad = True
+            output = model.dcrnn_model(x)
+            model.dcrnn_model.zero_grad()
+            torch.sum(output).backward()
+            with torch.no_grad():
+                gradient = x.grad.detach().cpu().numpy()
+                gradients.append(gradient)
+        gradients = np.array(gradients)
         np.savez_compressed('heatmaps/val_gradients.npz', gradients)
 
 def analyze_smoothgrad(args, noise_scale=15, num_noise=50):
@@ -60,16 +71,21 @@ def analyze_smoothgrad(args, noise_scale=15, num_noise=50):
         for _, (x, y) in enumerate(data_loader.get_iterator()):
             x, y = supervisor._prepare_data(x, y)
             #print('x shape:', x.shape)
-            noised_inputs = torch.stack([torch.zeros_like(x) for _ in range(num_noise)])
             input_noise_scale = noise_scale * (np.max(x.cpu().numpy()) - np.min(x.cpu().numpy()))
 
+            gradients = []
             for i in range(num_noise):
-                noised_inputs[i] = x + input_noise_scale * torch.randn_like(x)
-                noised_data_loader = DataLoader(noised_inputs[i], y, batch_size=64, pad_with_last_sample=False)
-                gradient = get_gradients(noised_data_loader, supervisor)
-                smoothgrads.append(gradient)
+                noised_input = x + input_noise_scale * torch.randn_like(x)
+                noised_input.requires_grad = True
+                output = model.dcrnn_model(noised_input)
+                model.dcrnn_model.zero_grad()
+                torch.sum(output).backward()
+                with torch.no_grad():
+                    gradient = noised_input.grad.detach().cpu().numpy()
+                    gradients.append(gradient)
 
-        smoothgrads = np.mean(smoothgrads, axis=0)
+            smoothgrad = np.mean(gradients, axis=0)
+            smoothgrads.append(smoothgrad)
         np.savez_compressed('heatmaps/val_smoothgrads.npz', smoothgrads)
 
 
