@@ -112,7 +112,7 @@ def analyze_ig(args, baseline="zero", steps=50):
             baseline = supervisor.standard_scaler.transform(baseline)
             
             diff = x - baseline
-            scaled_inputs = [baseline + (float(i) / steps)] * diff for i in range(steps + 1)]
+            scaled_inputs = [baseline + (float(i) / steps) * diff for i in range(steps + 1)]
             
             gradients = []
             for i in range(len(scaled_inputs)):
