@@ -52,7 +52,7 @@ def analyze_gradients(args):
         gradients = np.array(gradients)
         np.savez_compressed('heatmaps/val_gradients.npz', gradients)
 
-def analyze_smoothgrad(args, noise_scale=15, num_noise=50):
+def analyze_smoothgrad(args, noise_scale=0.15, num_noise=50):
     print('analyzing smooth grads...')
     with open(args.config_filename) as f:
         supervisor_config = yaml.load(f)
@@ -70,6 +70,7 @@ def analyze_smoothgrad(args, noise_scale=15, num_noise=50):
         smoothgrads = []
         for _, (x, y) in enumerate(data_loader.get_iterator()):
             x, y = supervisor._prepare_data(x, y)
+            print('getting smoothgrad for batch %s out of %s ...' % (_, data_loader.num_batch))
             #print('x shape:', x.shape)
             input_noise_scale = noise_scale * (np.max(x.cpu().numpy()) - np.min(x.cpu().numpy()))
 
@@ -131,6 +132,49 @@ def analyze_ig(args, baseline="zero", steps=50):
         np.savez_compressed('heatmaps/val_igs.npz', igs)
 
 
+def analyze_smoothtaylor(args, num_roots=50, noise_scale=0.15):
+    print('analyzing smoothtaylor...')
+    with open(args.config_filename) as f:
+        supervisor_config = yaml.load(f)
+        supervisor_config['seed'] = args.seed
+
+        graph_pkl_filename = supervisor_config['data'].get('graph_pkl_filename')
+        sensor_ids, sensor_id_to_ind, adj_mx = load_graph_data(graph_pkl_filename)
+
+        supervisor = DCRNNSupervisor(adj_mx=adj_mx, **supervisor_config)
+
+        dataset = 'val'
+        supervisor.dcrnn_model = supervisor.dcrnn_model.eval()
+        data_loader = supervisor._data['{}_loader'.format(dataset)]
+
+        smoothtaylors = []
+        for _, (x, y) in enumerate(data_loader.get_iterator()):
+            x, y = supervisor._prepare_data(x, y)
+            print('getting smoothtaylor for batch %s out of %s ...' % (_, data_loader.num_batch))
+
+            input_noise_scale = noise_scale * (np.max(x.cpu().numpy()) - np.min(x.cpu().numpy()))
+            
+            gradients = []
+            noised_inputs = []
+            for i in range(num_roots):
+                noised_input = x + input_noise_scale * torch.randn_like(x)
+                noised_input.requires_grad = True
+                noised_inputs.append(noised_input)
+                output = supervisor.dcrnn_model(noised_input)
+                supervisor.dcrnn_model.zero_grad()
+                torch.sum(output).backward()
+                with torch.no_grad():
+                    gradient = noised_input.grad.detach().cpu().numpy()
+                    gradients.append(gradient)
+
+            smoothtaylor = np.mean([(x - noised_inputs[i]).numpy() * gradients[i]
+                             for i in range(num_roots)], axis=0)
+            smoothtaylors.append(smoothtaylor)
+        np.savez_compressed('heatmaps/val_smoothtaylors.npz', smoothtaylors)
+
+
+
+
 if __name__ == '__main__':
     sys.path.append(os.getcwd())
     parser = argparse.ArgumentParser()
@@ -143,7 +187,7 @@ if __name__ == '__main__':
 
     # Generate gradients attributions
     #analyze_gradients(args)
-    #analyze_smoothgrad(args)
-    analyze_ig(args)
-    #analyze_smoothtaylor(args)
+    analyze_smoothgrad(args)
+    #analyze_ig(args)
+    analyze_smoothtaylor(args)
 
