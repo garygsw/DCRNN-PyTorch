@@ -25,6 +25,7 @@ def get_gradients(data_loader, model):
     return gradients
 
 def analyze_gradients(args):
+    print('analyzing grads...')
     with open(args.config_filename) as f:
         supervisor_config = yaml.load(f)
         supervisor_config['seed'] = args.seed
@@ -41,6 +42,7 @@ def analyze_gradients(args):
         np.savez_compressed('heatmaps/val_gradients.npz', gradients)
 
 def analyze_smoothgrad(args, noise_scale=15, num_noise=50):
+    print('analyzing smooth grads...')
     with open(args.config_filename) as f:
         supervisor_config = yaml.load(f)
         supervisor_config['seed'] = args.seed
@@ -83,7 +85,7 @@ if __name__ == '__main__':
 
     # Generate gradients attributions
     analyze_gradients(args)
-    #analyze_smoothgrad(args)
+    analyze_smoothgrad(args)
     #analyze_ig(args)
     #analyze_smoothtaylor(args)
 
