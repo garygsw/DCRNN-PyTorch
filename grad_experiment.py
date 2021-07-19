@@ -107,6 +107,7 @@ def analyze_ig(args, baseline="zero", steps=50):
         igs = []
         for _, (x, y) in enumerate(data_loader.get_iterator()):
             x, y = supervisor._prepare_data(x, y)
+            print('getting IG for batch %s out of %s ...' % (_, data_loader.num_batch))
             #print('x shape:', x.shape)
             baseline = torch.zeros_like(x)
             baseline = supervisor.standard_scaler.transform(baseline)
@@ -116,9 +117,9 @@ def analyze_ig(args, baseline="zero", steps=50):
             
             gradients = []
             for i in range(len(scaled_inputs)):
-                scale_input = scaled_inputs[i]
-                scale_input.requires_grad = True
-                output = supervisor.dcrnn_model(scale_input)
+                scaled_input = scaled_inputs[i]
+                scaled_input.requires_grad = True
+                output = supervisor.dcrnn_model(scaled_input)
                 supervisor.dcrnn_model.zero_grad()
                 torch.sum(output).backward()
                 with torch.no_grad():
