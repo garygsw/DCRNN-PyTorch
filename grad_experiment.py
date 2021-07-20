@@ -167,7 +167,7 @@ def analyze_smoothtaylor(args, num_roots=50, noise_scale=0.15):
                     gradient = noised_input.grad.detach().cpu().numpy()
                     gradients.append(gradient)
 
-            smoothtaylor = np.mean([(x - noised_inputs[i]).numpy() * gradients[i]
+            smoothtaylor = np.mean([(x.cpu() - noised_inputs[i]).numpy() * gradients[i]
                              for i in range(num_roots)], axis=0)
             smoothtaylors.append(smoothtaylor)
         np.savez_compressed('heatmaps/val_smoothtaylors.npz', smoothtaylors)
@@ -187,7 +187,7 @@ if __name__ == '__main__':
 
     # Generate gradients attributions
     #analyze_gradients(args)
-    analyze_smoothgrad(args)
+    #analyze_smoothgrad(args)
     #analyze_ig(args)
     analyze_smoothtaylor(args)
 
